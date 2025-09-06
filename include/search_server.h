@@ -6,7 +6,8 @@
 #include <map>
 #include <iostream>
 #include <algorithm>
-#include <cmath>
+#include <sstream>
+#include <iomanip>
 
 #include "inverted_index.h"
 
@@ -20,7 +21,6 @@ struct RelativeIndex
     }
 };
  
-
 class SearchServer
 {
 
@@ -43,34 +43,14 @@ public:
     std::vector<std::vector<RelativeIndex>> search(const
         std::vector<std::string>& queries_input);
 
-    
-       
+    /**
+    * Установка максимального количество ответов с поискового сервера
+    * @param n - новое значение для максимального количества ответов
+    */
+    void setMaxResponses(int n);
+
 private:
+    size_t max_responses = 5;
     InvertedIndex _index;
-    std::vector<std::string> SplitIntoWords(const std::string& text);
     std::set<std::string> getSetUniqWords(const std::string& request);
-    std::vector<std::pair<std::string, int>> 
-        getSortWordsEntries(const std::set<std::string>& words);
-    size_t getWordCountInDoc(const std::string& word, const size_t doc_id);
-    std::vector<size_t> getListIds(std::string word); 
-    size_t getAbsolRelevForDocument(size_t docId, std::set<std::string> &uniqWords);
 };
-
-
-
-
-
-
-
-
-
-
-
-//void addDocuments(const vectorStr& documents);
-    //std::vector<vectorPairIntFloat> getSearchResults(const vectorStr& requests, int limit);
-
-
-//std::map<std::string, std::set<int>> search_index;
-//vectorPairIntFloat findTopDocuments(const vectorStr& request, int limit) const;
-//vectorPairIntFloat findDocuments(const vectorStr& request) const;   
-

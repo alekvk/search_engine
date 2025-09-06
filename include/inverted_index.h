@@ -5,6 +5,9 @@
 #include <mutex>
 #include <thread>
 #include <iostream>
+#include <sstream>
+#include <algorithm>
+
 
 struct Entry 
 {
@@ -41,9 +44,8 @@ public:
     
 private:
     std::vector<std::string> SplitIntoWords(const std::string& text); 
-    std::vector<std::string> docs; // список содержимого документов  ???
-    std::map<std::string, std::vector<Entry>> freq_dictionary; // частотный словарь
+    std::map<std::string, std::vector<Entry>> freq_dictionary;
     void indexingDocument(const std::vector<std::string>& document, int doc_id);
+    void removePunctuatMark(std::string& word);
     static std::mutex mutex_freq_dictionary;
-
 };

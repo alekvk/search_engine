@@ -17,7 +17,7 @@ int main()
         texts = convJSON.GetTextDocuments();
         requests = convJSON.GetRequests();       
     } catch (std::runtime_error err) {
-        std::cout<<err.what()<<"  Exit program!"<<std::endl;
+        std::cout<<err.what()<<"\nExit program!"<<std::endl;
         return 1;    
     }
     
@@ -25,14 +25,14 @@ int main()
     invInd.UpdateDocumentBase(texts);
 
     SearchServer searchServer(invInd);
+    searchServer.setMaxResponses(convJSON.GetResponsesLimit());
     auto searchResult = searchServer.search(requests);
 
     convJSON.putAnswers(ConvertRelIndexToPair(searchResult));
 
     return 0;
+
 }
-
-
 
 
 

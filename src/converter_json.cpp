@@ -13,7 +13,10 @@ void ConverterJSON::configInit()
         throw std::runtime_error ("Config file is missing!");
     }
 
-    
+    std::stringstream ss;
+    ss << SearchEngine_VERSION_MAJOR << "."
+       <<SearchEngine_VERSION_MINOR;
+    vers_cmake = ss.str();
 
     int count = 1;
 
@@ -27,7 +30,7 @@ void ConverterJSON::configInit()
             if (j.key() == "name") 
                 name_project = j.value();
             else if (j.key() == "version") 
-                version = j.value();
+                vers_conf_json = j.value();
             else if (j.key() == "max_responses") 
                 max_responses = j.value();
         }     
@@ -39,7 +42,9 @@ void ConverterJSON::configInit()
     }
 
     if (checkConfig())
-        std::cout<<"\nSTART!\nProject name "<<name_project<<std::endl;
+        std::cout<<"\nSTART!\nProject "<< name_project
+        <<" version " << vers_cmake << std::endl;
+
     else
         throw std::runtime_error("Configuration is not specified in the config.json file!  ");
 }
@@ -50,7 +55,7 @@ std::vector<std::string> ConverterJSON::GetTextDocuments()
 
     std::vector<std::string> result;
     
-    for (auto file : files) {
+    for (auto file: files) {
         std::string path = file;
         std::string text; 
 
@@ -171,6 +176,17 @@ std::string ConverterJSON::getNameRequest(int n)
 
 bool ConverterJSON::checkConfig()
 {
-    return (!name_project.empty() && !version.empty()
+    return (!name_project.empty() && checkVersion()
             && max_responses > 0);
+}
+
+bool ConverterJSON::checkVersion()
+{
+    if(vers_cmake != vers_conf_json)
+        throw std::runtime_error ("config.json has incorrect file version "
+                                  + vers_conf_json
+                                  + "\nThe program version number "
+                                  + vers_cmake +"\n");
+
+    return true;
 }

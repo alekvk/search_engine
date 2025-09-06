@@ -5,15 +5,19 @@ std::mutex InvertedIndex::mutex_freq_dictionary;
 void InvertedIndex::UpdateDocumentBase(std::vector<std::string> input_docs)
 {
     std::size_t doc_id = 0;
-    
-    for (auto document :input_docs) {
 
-        std::thread index([this, document, doc_id]()
-            {indexingDocument(SplitIntoWords(document), doc_id);});
+    std::vector<std::thread> threads;
+
+    for (auto document : input_docs) {
+        threads.emplace_back([this, document, doc_id]() {
+        indexingDocument(SplitIntoWords(document), doc_id);
+        });
         ++doc_id;
-        index.join();
     }
 
+    for (auto& thread : threads) {
+        thread.join();
+    }
 }
 
 void InvertedIndex::indexingDocument(const std::vector<std::string>& document, int doc_id)
@@ -48,25 +52,33 @@ std::vector<Entry> InvertedIndex::GetWordCount(const std::string& word)
 std::vector<std::string> 
 InvertedIndex::SplitIntoWords(const std::string& text) 
 {
-      
+
     std::vector<std::string> words;
-    std::string word;
-    for (const char c : text) {
-        if (!((c >= 48 && c <= 57) || (c >= 64 && c <= 90) 
-            || (c >= 97 && c <= 122)) ) 
-        {
-            if (!word.empty()) {
-                words.push_back(word);
-                word.clear();
-            }
-        } else {
-            word += std::tolower(static_cast<unsigned char>(c));
-            
-        }
-    }
-    if (!word.empty()) {
-        words.push_back(word);
+    std::istringstream ist(text);
+
+    while (ist) {
+        std::string word;
+        ist >> word;
+        std::transform(word.begin(), word.end(), word.begin(),
+                       [](unsigned char c){ return std::tolower(c); });
+        if (!word.empty())
+            removePunctuatMark(word);
+            words.push_back(word);
     }
 
     return words;
+}
+
+void InvertedIndex:: removePunctuatMark(std::string& word)
+{
+    std::vector<char> charASCII {21,40,41,44,46,58,59,63};
+
+    while (true) {
+        auto result {std::find(begin(charASCII), end(charASCII),
+                     word[word.length() - 1])};
+        if (result == end(charASCII))
+            return;
+        else
+            word.erase(word.length() - 1);
+    }
 }

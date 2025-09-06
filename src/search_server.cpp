@@ -1,134 +1,60 @@
 #include "search_server.h"
 
-std::set<std::string> SearchServer::getSetUniqWords(const std::string& request)
-{
-    std::set<std::string> result;
-    
-    for (auto word : SplitIntoWords(request)) 
-        result.insert(word);
-
-    return result;
-}
-
-std::vector<std::pair<std::string, int>> 
-SearchServer::getSortWordsEntries(const std::set<std::string>& words)
-{
-    std::vector<std::pair<std::string, int>> result;
-
-    for (const auto& word : words)
-    {
-        auto wordEntries = _index.GetWordCount(word);
-        size_t wordEntriesSum = 0;
-
-        for (auto wordEntry : wordEntries)
-            wordEntriesSum += wordEntry.count;
-        
-        result.push_back({word, wordEntriesSum});
-    }
-
-    std::sort(result.begin(), result.end(), [](auto &l, auto &r)
-    {
-        return l.second < r.second;
-    });
-
-    return result;
-}
-
-
-std::vector<size_t> 
-SearchServer::getListIds(std::string word)
-{
-    std::vector<size_t> result;
-
-    for (auto entry : _index.GetWordCount(word))
-        result.push_back(entry.doc_id);
-
-    return result;
-}
-
-
-size_t SearchServer::getAbsolRelevForDocument(size_t docId, std::set<std::string> &uniqWords) {
-   
-    size_t absoluteRelevance = 0;
-
-    for (const auto& word : uniqWords) {
-       size_t wordCountInDoc = getWordCountInDoc(word, docId);
-       absoluteRelevance += wordCountInDoc;
-    }
-
-    return absoluteRelevance;
-}
- 
-
-
-size_t SearchServer::getWordCountInDoc(const std::string& word, const size_t doc_id) 
-{
-    auto vectorEntry = _index.GetWordCount(word); 
-    auto beg = vectorEntry.begin();
-    auto end = vectorEntry.end();
-    
-    auto it = std::find_if(beg, end, [doc_id](auto p)
-        {
-            return p.doc_id == doc_id;
-        });
-
-    if (it == end)
-        return 0;
-    else
-        return it->count;
-}
 
 std::vector<std::vector<RelativeIndex>>
-SearchServer::search(const std::vector<std::string>& queries_input)
+SearchServer::search(const std::vector<std::string> &queries_input)
 {
-
     std::vector<std::vector<RelativeIndex>> result{};
 
-    if (queries_input.empty())
+    for (const auto& request : queries_input)
     {
-        std::cout << "Requests are empty!"<<std::endl;
-        return result;
-    }
-
-    for (const auto& query_input : queries_input) {
-               
-        auto uniqWords = getSetUniqWords(query_input);
-        if (uniqWords.empty())
-        {
-            std::cout << "Empty request\n";
-            continue;
-        }
-
-        
-        auto wordsEntries = getSortWordsEntries(uniqWords);
-       
-        auto conteinerIdDocs = getListIds(wordsEntries[0].first);
-
         std::vector<RelativeIndex> relativeIndexes;
-        size_t maxAbsolRelevance {0};
+        std::map<size_t, size_t> mapIdCount;
 
-        for (auto docId : conteinerIdDocs) {
-            size_t absolRelevance = getAbsolRelevForDocument(docId, uniqWords);
-            RelativeIndex relIndex;
-            relIndex.doc_id = docId;
-            relIndex.rank = absolRelevance;
-            relativeIndexes.push_back(relIndex);
-          
-            if (absolRelevance > maxAbsolRelevance) 
-                maxAbsolRelevance = absolRelevance;
+        for (const auto& word : getSetUniqWords(request))
+        {
+            std::vector<Entry> entries = _index.GetWordCount(word);
+
+            if (!entries.empty())
+            {
+                for (auto entry : entries){
+                    auto it = mapIdCount.find(entry.doc_id);
+                    if (it != mapIdCount.end())
+                        mapIdCount[entry.doc_id] += entry.count;
+                    else
+                        mapIdCount[entry.doc_id] = entry.count;
+                }
+            }
         }
 
-        for (auto& relativeIndex : relativeIndexes) {
+
+        auto iterMaxValuePair = std::max_element(mapIdCount.begin(), mapIdCount.end(),
+                                                            [](auto p1, auto p2)
+        {
+            return p1.second < p2.second;
+        });
+
+        size_t maxAbsolRelevance = (*iterMaxValuePair).second;
+
+        for (auto it = mapIdCount.begin(); it != mapIdCount.end(); ++it) {
+            float rank;
             if (maxAbsolRelevance != 0)
-                relativeIndex.rank /=(float) maxAbsolRelevance;
-            else relativeIndex.rank = 0;
+                rank  = (float)(it->second)/maxAbsolRelevance ;
+            else
+                rank = 0.0;
+
+            relativeIndexes.push_back({it->first, rank});
         }
 
         std::sort(relativeIndexes.begin(), relativeIndexes.end(),
                  [](RelativeIndex &l, RelativeIndex &r)
-                      {
-                           return (l.rank > r.rank );
-                      });
+        {
+                 return l.rank > r.rank ||
+                        (l.rank == r.rank && l.doc_id < r.doc_id);
+        });
+
+        if (relativeIndexes.size() > max_responses )
+            relativeIndexes.resize(max_responses);
 
         result.push_back(relativeIndexes);
     }
@@ -136,26 +62,23 @@ SearchServer::search(const std::vector<std::string>& queries_input)
     return result;
 }
 
-std::vector<std::string> 
-SearchServer::SplitIntoWords(const std::string& text) 
+
+std::set<std::string> SearchServer::getSetUniqWords(const std::string& text)
 {
-    std::vector<std::string> words;
-    std::string word;
-    for (const char ch : text) {
-        if (!((ch >= 48 && ch <= 57) || (ch >= 64 && ch <= 90) 
-            || (ch >= 97 && ch <= 122)) ) 
-        {
-            if (!word.empty()) {
-                words.push_back(word);
-                word.clear();
-            }
-        } else {
-            word += std::tolower(static_cast<unsigned char>(ch));;
-        }
-    }
-    if (!word.empty()) {
-        words.push_back(word);
+    std::set<std::string> words;
+    std::istringstream ist(text);
+
+    while (ist) {
+        std::string word;
+        ist >> word;
+        if (!word.empty())
+            words.insert(word);
     }
 
     return words;
+}
+
+void SearchServer::setMaxResponses(int n)
+{
+    if (n > 0) max_responses = n;
 }

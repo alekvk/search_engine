@@ -1,0 +1,3 @@
+// the configured options and settings for SearchEngine
+#define SearchEngine_VERSION_MAJOR @SearchEngine_VERSION_MAJOR@
+#define SearchEngine_VERSION_MINOR @SearchEngine_VERSION_MINOR@
