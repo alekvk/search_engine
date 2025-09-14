@@ -39,7 +39,7 @@ public:
         
 private:
     void configInit();
-    const std::string json_path = "../../json_files/";
+    const std::string json_path = "json_files/";
     const std::string config_path = json_path + "config.json";
     const std::string requests_path = json_path + "requests.json";
     const std::string answers_path = json_path + "answers.json.";

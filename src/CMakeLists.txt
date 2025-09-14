@@ -15,5 +15,6 @@ add_executable(search_engine main.cpp
 
 target_include_directories(search_engine PUBLIC ${MY_INCLUDE_DIR})
 
-
-
+add_custom_command(TARGET search_engine  PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/json_files/ $<TARGET_FILE_DIR:search_engine>)

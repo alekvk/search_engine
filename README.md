@@ -40,8 +40,7 @@
   Информация из данного поля отображается при старте приложения.
 - version - поле с номером версии поискового движка.
   Если поле version не совпадает с версией самого
-  приложения, то будет выдана ошибка config.json has incorrect file
-  version.
+  приложения, то будет выброшено исключение и выдана ошибка: "config.json has incorrect file version".
 - max_responses — поле, определяющее максимальное количество ответов на один запрос.
 - files - поле содержит пути к файлам, по которым необходимо осуществлять поиск. Если по указанному пути  файл не существует, то на экран выводится соответствующая ошибка, но выполнение программы не прекращается.
 
@@ -171,6 +170,8 @@ public:
     * Положить в файл answers.json результаты поисковых запросов
     */
     void putAnswers(std::vector<std::vector<std::pair<int, float>>> answers);
+private:
+    ...    
 }
 ```
 
@@ -214,9 +215,7 @@ public:
     */
     void setMaxResponses(int n);
 private:
-    std::vector<std::string> docs; // список содержимого документов
-    std::map<std::string, std::vector<Entry>> freq_dictionary; // частотный
-словарь
+    ...    
 };
 ```
 
@@ -268,9 +267,9 @@ public:
     * Установка максимального количество ответов с поискового сервера
     * @param n - новое значение для максимального количества ответов
     */
-    void setMaxResponses(int n);    
+    void setMaxResponses(int n);
 private:
-    InvertedIndex _index;
+    ...       
 };
 ```
 
@@ -278,7 +277,7 @@ private:
 
 ## Тестирование
 Подключена библиотека Google Test для проведения модульных тестов.<br>
-Тесты расположены в папке tests (${CMAKE_SOURCE_DIR}/tests).<br>
+Тесты расположены в папке tests.<br>
 
 Чтобы убедиться, что объект класса InvertedIndex правильно заполняет<br>
 коллекцию freq_dicitonary, используется набор тестов test_invert_index.cpp<br>

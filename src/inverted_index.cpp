@@ -71,7 +71,7 @@ InvertedIndex::SplitIntoWords(const std::string& text)
 
 void InvertedIndex:: removePunctuatMark(std::string& word)
 {
-    std::vector<char> charASCII {21,40,41,44,46,58,59,63};
+    std::vector<char> charASCII {33,40,41,44,46,58,59,63};
 
     while (true) {
         auto result {std::find(begin(charASCII), end(charASCII),
